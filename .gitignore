@@ -44,3 +44,9 @@ ios/
 
 # EAS
 eas-build-*.log
+.idea/deviceManager.xml
+.idea/markdown.xml
+.idea/modules.xml
+.idea/music-letterbox-mobile.iml
+.idea/vcs.xml
+.idea/caches/deviceStreaming.xml
