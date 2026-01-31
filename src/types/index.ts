@@ -51,9 +51,27 @@ export interface DeezerAlbum {
   };
 }
 
+export interface DeezerArtist {
+  id: number;
+  name: string;
+  picture: string;
+  picture_small: string;
+  picture_medium: string;
+  picture_big: string;
+  picture_xl?: string;
+  nb_album?: number;
+  nb_fan?: number;
+}
+
 export interface DeezerSearchResponse {
   data: DeezerAlbum[];
   total: number;
+  next?: string;
+}
+
+export interface DeezerArtistResponse {
+  data: DeezerArtist[];
+  total?: number;
   next?: string;
 }
 
