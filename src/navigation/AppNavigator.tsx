@@ -16,6 +16,7 @@ import {
   CollectionScreen,
   ProfileScreen,
   AlbumDetailScreen,
+  ArtistDetailScreen,
 } from '../screens';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -116,6 +117,7 @@ export const AppNavigator: React.FC = () => {
                 animation: 'slide_from_bottom',
               }}
             />
+            <Stack.Screen name="ArtistDetail" component={ArtistDetailScreen} />
             <Stack.Screen name="Search" component={SearchScreen} />
           </>
         ) : (

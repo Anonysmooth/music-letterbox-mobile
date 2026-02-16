@@ -1,4 +1,4 @@
-import { LastFmTopArtistsResponse, LastFmArtist } from '../types';
+import { LastFmTopArtistsResponse, LastFmArtist, LastFmArtistInfoResponse, LastFmArtistInfo } from '../types';
 import { LASTFM_API_KEY } from '../config/apiKeys';
 
 const LASTFM_API_BASE = 'https://ws.audioscrobbler.com/2.0';
@@ -33,6 +33,20 @@ export const lastfmApi = {
     const data = await response.json();
     // API returns { tags: { tag: [...] } } not { toptags: { tag: [...] } }
     return data.tags?.tag || [];
+  },
+
+  /**
+   * Get artist info (bio, tags, stats) from Last.fm
+   */
+  async getArtistInfo(artistName: string): Promise<LastFmArtistInfo> {
+    const url = `${LASTFM_API_BASE}/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${LASTFM_API_KEY}&format=json&lang=fr`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Last.fm API error: ${response.status}`);
+    }
+
+    const data: LastFmArtistInfoResponse = await response.json();
+    return data.artist;
   },
 
   /**

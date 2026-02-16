@@ -111,79 +111,6 @@ export const SearchScreen: React.FC = () => {
     }
   }, []);
 
-  const handleArtistSelect = useCallback(async (artist: DeezerArtist) => {
-    setSelectedGenre(null);
-    setQuery(artist.name);
-    setIsLoading(true);
-    setViewMode('albums');
-
-    try {
-      const response = await deezerApi.getArtistAlbums(artist.id, 50);
-      // Enrich albums with artist info (not included in artist albums endpoint)
-      const enrichedAlbums = (response.data || []).map(album => ({
-        ...album,
-        artist: album.artist || {
-          id: artist.id,
-          name: artist.name,
-          picture: artist.picture,
-          picture_small: artist.picture_small,
-          picture_medium: artist.picture_medium,
-          picture_big: artist.picture_big,
-        },
-      }));
-      setResults(enrichedAlbums);
-      setArtistResults([]);
-      setLastfmArtists([]);
-    } catch (error) {
-      console.error('Artist albums error:', error);
-      Alert.alert('Erreur', 'Impossible de charger les albums de cet artiste.');
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Handle Last.fm artist selection - search on Deezer
-  const handleLastfmArtistSelect = useCallback(async (artist: LastFmArtist) => {
-    setQuery(artist.name);
-    setIsLoading(true);
-    setViewMode('albums');
-
-    try {
-      // First find the artist on Deezer to get their ID
-      const deezerArtist = await deezerApi.searchArtist(artist.name);
-
-      if (deezerArtist) {
-        // Get albums directly from artist endpoint (better results)
-        const response = await deezerApi.getArtistAlbums(deezerArtist.id, 50);
-        const enrichedAlbums = (response.data || []).map(album => ({
-          ...album,
-          artist: album.artist || {
-            id: deezerArtist.id,
-            name: deezerArtist.name,
-            picture: deezerArtist.picture,
-            picture_small: deezerArtist.picture_small,
-            picture_medium: deezerArtist.picture_medium,
-            picture_big: deezerArtist.picture_big,
-          },
-        }));
-        setResults(enrichedAlbums);
-      } else {
-        // Fallback to album search
-        const response = await deezerApi.searchAlbums(artist.name, 50);
-        setResults(response.data || []);
-      }
-      setLastfmArtists([]);
-      setArtistResults([]);
-    } catch (error) {
-      console.error('Artist search error:', error);
-      Alert.alert('Erreur', 'Impossible de charger les albums de cet artiste.');
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
 
@@ -245,7 +172,11 @@ export const SearchScreen: React.FC = () => {
   const renderArtistItem = ({ item }: { item: DeezerArtist }) => (
     <TouchableOpacity
       style={styles.artistCard}
-      onPress={() => handleArtistSelect(item)}
+      onPress={() => navigation.navigate('ArtistDetail', {
+        artistName: item.name,
+        artistId: item.id,
+        artistImage: item.picture_big || item.picture_medium,
+      })}
     >
       <Image
         source={{ uri: item.picture_medium || item.picture }}
@@ -264,7 +195,10 @@ export const SearchScreen: React.FC = () => {
   const renderLastfmArtistItem = ({ item }: { item: LastFmArtist }) => (
     <TouchableOpacity
       style={styles.artistCard}
-      onPress={() => handleLastfmArtistSelect(item)}
+      onPress={() => navigation.navigate('ArtistDetail', {
+        artistName: item.name,
+        artistImage: lastfmApi.getArtistImageUrl(item),
+      })}
     >
       <Image
         source={{ uri: lastfmApi.getArtistImageUrl(item) }}

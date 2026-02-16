@@ -129,6 +129,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   AlbumDetail: { albumId: string | number; fromDeezer?: boolean };
+  ArtistDetail: { artistName: string; artistId?: number; artistImage?: string };
   Search: undefined;
 };
 
@@ -180,5 +181,64 @@ export interface LastFmTopTagsResponse {
       num_res: number;
       total: number;
     };
+  };
+}
+
+export interface LastFmArtistInfo {
+  name: string;
+  mbid?: string;
+  url: string;
+  image: Array<{
+    '#text': string;
+    size: 'small' | 'medium' | 'large' | 'extralarge' | 'mega';
+  }>;
+  stats: {
+    listeners: string;
+    playcount: string;
+  };
+  tags: {
+    tag: Array<{
+      name: string;
+      url: string;
+    }>;
+  };
+  bio: {
+    summary: string;
+    content: string;
+  };
+}
+
+export interface LastFmArtistInfoResponse {
+  artist: LastFmArtistInfo;
+}
+
+export interface TicketmasterEvent {
+  id: string;
+  name: string;
+  url: string;
+  dates: {
+    start: {
+      localDate: string;
+      localTime?: string;
+    };
+    status?: {
+      code: string;
+    };
+  };
+  _embedded?: {
+    venues?: Array<{
+      name: string;
+      city?: { name: string };
+      country?: { name: string; countryCode: string };
+    }>;
+  };
+}
+
+export interface TicketmasterSearchResponse {
+  _embedded?: {
+    events?: TicketmasterEvent[];
+  };
+  page?: {
+    totalElements: number;
   };
 }

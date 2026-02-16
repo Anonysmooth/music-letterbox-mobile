@@ -13,6 +13,8 @@ Une application mobile style Letterboxd pour la musique, connectée à l'API Dee
   - Écoutés
 - **Notes et critiques** : Notez les albums de 0 à 5 étoiles et écrivez des critiques
 - **Statistiques** : Visualisez vos statistiques de collection (artistes préférés, distribution des notes, etc.)
+- **Page artiste** : Biographie (Last.fm), tags, statistiques d'écoute et discographie complète
+- **Concerts & événements** : Prochains concerts et festivals de l'artiste en France (via Ticketmaster)
 - **Thème sombre** : Interface élégante inspirée de Letterboxd
 
 ## Prérequis
@@ -123,6 +125,7 @@ music-letterbox-mobile/
     │   └── AppNavigator.tsx
     ├── screens/           # Écrans de l'app
     │   ├── AlbumDetailScreen.tsx
+    │   ├── ArtistDetailScreen.tsx
     │   ├── CollectionScreen.tsx
     │   ├── HomeScreen.tsx
     │   ├── LoginScreen.tsx
@@ -130,11 +133,12 @@ music-letterbox-mobile/
     │   ├── RegisterScreen.tsx
     │   └── SearchScreen.tsx
     ├── config/            # Configuration
-    │   └── apiKeys.ts     # Clés API (Last.fm)
+    │   └── apiKeys.ts     # Clés API (Last.fm, Ticketmaster)
     ├── services/          # Services (API, storage)
     │   ├── authService.ts
     │   ├── deezerApi.ts
-    │   ├── lastfmApi.ts   # API Last.fm (artistes par genre)
+    │   ├── lastfmApi.ts        # API Last.fm (artistes par genre, bio)
+    │   ├── ticketmasterApi.ts  # API Ticketmaster (concerts, festivals)
     │   └── storage.ts
     └── types/             # Types TypeScript
         └── index.ts
@@ -149,7 +153,8 @@ music-letterbox-mobile/
 - **Expo SecureStore** (stockage sécurisé des tokens)
 - **AsyncStorage** (stockage local des données)
 - **API Deezer** (recherche d'albums et métadonnées)
-- **API Last.fm** (découverte d'artistes par genre musical)
+- **API Last.fm** (découverte d'artistes par genre, biographies)
+- **API Ticketmaster** (concerts et festivals)
 
 ## Configuration des Assets
 
@@ -173,12 +178,26 @@ Vous pouvez utiliser n'importe quel éditeur d'image pour créer ces assets avec
 L'app utilise l'API Deezer publique. Aucune clé API n'est requise pour les requêtes de base (recherche, détails d'albums).
 
 ### API Last.fm
-L'app utilise l'API Last.fm pour la découverte d'artistes par genre musical. Une clé API gratuite est nécessaire :
+L'app utilise l'API Last.fm pour la découverte d'artistes par genre musical et les biographies d'artistes. Une clé API gratuite est nécessaire :
 
 1. Créez un compte API sur [last.fm/api/account/create](https://www.last.fm/api/account/create)
 2. Renseignez votre clé dans `src/config/apiKeys.ts`
 
+### API Ticketmaster
+L'app utilise l'API Ticketmaster Discovery pour afficher les prochains concerts et festivals des artistes en France. Une clé API gratuite est nécessaire :
+
+1. Créez un compte développeur sur [developer.ticketmaster.com](https://developer.ticketmaster.com/)
+2. Renseignez votre Consumer Key dans `src/config/apiKeys.ts`
+
 ## Changelog
+
+### v1.4.0 - Page Artiste & Concerts
+- Nouvel écran **ArtistDetailScreen** avec biographie (Last.fm en français), tags, statistiques d'écoute et discographie complète
+- Ajout des **prochains concerts et festivals** en France via l'API Ticketmaster Discovery (résolution par attractionId pour inclure les festivals)
+- Navigation vers la page artiste depuis le nom de l'artiste dans AlbumDetailScreen (lien souligné)
+- Navigation vers la page artiste depuis les cards artistes dans SearchScreen (genres et recherche)
+- Nouveau service `ticketmasterApi.ts` et méthode `lastfmApi.getArtistInfo()`
+- Quick-add buttons sur les albums depuis la page artiste
 
 ### v1.3.0 - Exploration par genre (Last.fm)
 - Ajout de l'API Last.fm pour récupérer les artistes par genre musical

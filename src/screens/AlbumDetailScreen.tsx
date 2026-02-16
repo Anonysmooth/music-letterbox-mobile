@@ -294,7 +294,15 @@ export const AlbumDetailScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.title}>{title}</Text>
-            <Text style={styles.artist}>{artist}</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ArtistDetail', {
+                artistName: artist,
+                artistId: deezerAlbum?.artist?.id || localAlbum?.artistId,
+                artistImage: deezerAlbum?.artist?.picture_big || deezerAlbum?.artist?.picture_medium,
+              })}
+            >
+              <Text style={[styles.artist, styles.artistLink]}>{artist}</Text>
+            </TouchableOpacity>
             <View style={styles.metadata}>
               {releaseDate && (
                 <Text style={styles.metaText}>{new Date(releaseDate).getFullYear()}</Text>
@@ -531,6 +539,9 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  artistLink: {
+    textDecorationLine: 'underline',
   },
   metadata: {
     flexDirection: 'row',
