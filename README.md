@@ -6,6 +6,7 @@ Une application mobile style Letterboxd pour la musique, connectée à l'API Dee
 
 - **Authentification** : Inscription et connexion locale sécurisée
 - **Recherche d'albums** : Recherchez des albums via l'API Deezer
+- **Exploration par genre** : Parcourez les genres musicaux et découvrez les artistes associés (via Last.fm + Deezer)
 - **Collection personnelle** : Ajoutez des albums à votre collection avec trois statuts :
   - Favoris
   - À écouter (Wishlist)
@@ -128,9 +129,12 @@ music-letterbox-mobile/
     │   ├── ProfileScreen.tsx
     │   ├── RegisterScreen.tsx
     │   └── SearchScreen.tsx
+    ├── config/            # Configuration
+    │   └── apiKeys.ts     # Clés API (Last.fm)
     ├── services/          # Services (API, storage)
     │   ├── authService.ts
     │   ├── deezerApi.ts
+    │   ├── lastfmApi.ts   # API Last.fm (artistes par genre)
     │   └── storage.ts
     └── types/             # Types TypeScript
         └── index.ts
@@ -145,6 +149,7 @@ music-letterbox-mobile/
 - **Expo SecureStore** (stockage sécurisé des tokens)
 - **AsyncStorage** (stockage local des données)
 - **API Deezer** (recherche d'albums et métadonnées)
+- **API Last.fm** (découverte d'artistes par genre musical)
 
 ## Configuration des Assets
 
@@ -166,6 +171,40 @@ Vous pouvez utiliser n'importe quel éditeur d'image pour créer ces assets avec
 
 ### API Deezer
 L'app utilise l'API Deezer publique. Aucune clé API n'est requise pour les requêtes de base (recherche, détails d'albums).
+
+### API Last.fm
+L'app utilise l'API Last.fm pour la découverte d'artistes par genre musical. Une clé API gratuite est nécessaire :
+
+1. Créez un compte API sur [last.fm/api/account/create](https://www.last.fm/api/account/create)
+2. Renseignez votre clé dans `src/config/apiKeys.ts`
+
+## Changelog
+
+### v1.3.0 - Exploration par genre (Last.fm)
+- Ajout de l'API Last.fm pour récupérer les artistes par genre musical
+- Affichage des genres sous forme de cartes avec images d'artistes représentatifs
+- Clic sur un genre → liste des artistes (images Deezer) → albums de l'artiste
+- Récupération automatique du genre lors de l'ajout d'un album à la collection
+- Nouveau service `lastfmApi.ts` et fichier de configuration `apiKeys.ts`
+
+### v1.2.0 - Genres sur la page Recherche
+- Ajout de suggestions de genres sur la page Recherche
+- Affichage des artistes par genre via l'API Deezer
+
+### v1.1.0 - Genres sur la page Collection
+- Ajout d'un filtre par genre musical sur la page Collection
+- Chips de genres avec filtrage dynamique
+
+### v1.0.1 - Corrections
+- Correction de la hauteur de l'application (safe area)
+
+### v1.0.0 - Première version
+- Recherche d'albums via l'API Deezer
+- Collection personnelle avec statuts (favoris, à écouter, écoutés)
+- Notes et critiques
+- Statistiques de collection
+- Authentification locale
+- Thème sombre
 
 ## Licence
 
