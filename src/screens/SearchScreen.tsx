@@ -16,17 +16,18 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
 import { colors, spacing, fontSize, borderRadius } from '../constants/theme';
-import { RootStackParamList, DeezerAlbum, DeezerArtist, AlbumStatus } from '../types';
+import { RootStackParamList, DeezerAlbum, DeezerArtist, AlbumStatus, LastFmArtist } from '../types';
 import { AlbumCard, LoadingSpinner, EmptyState } from '../components';
 import { useAlbums } from '../context/AlbumsContext';
 import { deezerApi } from '../services/deezerApi';
+import { lastfmApi } from '../services/lastfmApi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface DeezerGenre {
-  id: number;
+interface GenreWithImage {
   name: string;
-  picture: string;
+  url: string;
+  imageUrl?: string;
 }
 
 type ViewMode = 'albums' | 'artists';
@@ -40,17 +41,36 @@ export const SearchScreen: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('albums');
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [genres, setGenres] = useState<DeezerGenre[]>([]);
+  const [genres, setGenres] = useState<GenreWithImage[]>([]);
+  const [lastfmArtists, setLastfmArtists] = useState<LastFmArtist[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
-  // Load genres on mount
+  // Load Last.fm top tags (genres) with artist images on mount
   useEffect(() => {
     const loadGenres = async () => {
       try {
-        const response = await deezerApi.getGenres();
-        // Filter out "All" genre (id: 0) and limit to main genres
-        const filteredGenres = response.data.filter(g => g.id !== 0);
-        setGenres(filteredGenres);
+        const tags = await lastfmApi.getTopTags(15);
+
+        // Fetch a representative artist image for each genre
+        const genresWithImages = await Promise.all(
+          tags.map(async (tag) => {
+            try {
+              const artists = await lastfmApi.getTopArtistsByTag(tag.name, 1);
+              if (artists.length > 0) {
+                const deezerArtist = await deezerApi.searchArtist(artists[0].name);
+                return {
+                  ...tag,
+                  imageUrl: deezerArtist?.picture_big || deezerArtist?.picture_medium,
+                };
+              }
+            } catch {
+              // Ignore errors for individual genres
+            }
+            return { ...tag, imageUrl: undefined };
+          })
+        );
+
+        setGenres(genresWithImages);
       } catch (error) {
         console.error('Error loading genres:', error);
       }
@@ -58,7 +78,7 @@ export const SearchScreen: React.FC = () => {
     loadGenres();
   }, []);
 
-  const handleGenreSelect = useCallback(async (genre: DeezerGenre) => {
+  const handleGenreSelect = useCallback(async (genre: GenreWithImage) => {
     setSelectedGenre(genre.name);
     setIsLoading(true);
     setHasSearched(true);
@@ -66,8 +86,21 @@ export const SearchScreen: React.FC = () => {
     setQuery('');
 
     try {
-      const response = await deezerApi.getGenreArtists(genre.id);
-      setArtistResults(response.data || []);
+      // Use Last.fm to get top artists for this genre/tag
+      const lastfmArtistsList = await lastfmApi.getTopArtistsByTag(genre.name, 20);
+
+      // Fetch Deezer artist info in parallel to get images
+      const deezerArtistsPromises = lastfmArtistsList.map(async (artist) => {
+        const deezerArtist = await deezerApi.searchArtist(artist.name);
+        return deezerArtist;
+      });
+
+      const deezerArtistResults = await Promise.all(deezerArtistsPromises);
+      // Filter out null results
+      const validArtists = deezerArtistResults.filter((a): a is DeezerArtist => a !== null);
+
+      setArtistResults(validArtists);
+      setLastfmArtists([]);
       setResults([]);
     } catch (error) {
       console.error('Genre search error:', error);
@@ -100,8 +133,50 @@ export const SearchScreen: React.FC = () => {
       }));
       setResults(enrichedAlbums);
       setArtistResults([]);
+      setLastfmArtists([]);
     } catch (error) {
       console.error('Artist albums error:', error);
+      Alert.alert('Erreur', 'Impossible de charger les albums de cet artiste.');
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle Last.fm artist selection - search on Deezer
+  const handleLastfmArtistSelect = useCallback(async (artist: LastFmArtist) => {
+    setQuery(artist.name);
+    setIsLoading(true);
+    setViewMode('albums');
+
+    try {
+      // First find the artist on Deezer to get their ID
+      const deezerArtist = await deezerApi.searchArtist(artist.name);
+
+      if (deezerArtist) {
+        // Get albums directly from artist endpoint (better results)
+        const response = await deezerApi.getArtistAlbums(deezerArtist.id, 50);
+        const enrichedAlbums = (response.data || []).map(album => ({
+          ...album,
+          artist: album.artist || {
+            id: deezerArtist.id,
+            name: deezerArtist.name,
+            picture: deezerArtist.picture,
+            picture_small: deezerArtist.picture_small,
+            picture_medium: deezerArtist.picture_medium,
+            picture_big: deezerArtist.picture_big,
+          },
+        }));
+        setResults(enrichedAlbums);
+      } else {
+        // Fallback to album search
+        const response = await deezerApi.searchAlbums(artist.name, 50);
+        setResults(response.data || []);
+      }
+      setLastfmArtists([]);
+      setArtistResults([]);
+    } catch (error) {
+      console.error('Artist search error:', error);
       Alert.alert('Erreur', 'Impossible de charger les albums de cet artiste.');
       setResults([]);
     } finally {
@@ -133,9 +208,14 @@ export const SearchScreen: React.FC = () => {
 
   const handleQuickAdd = useCallback(async (album: DeezerAlbum, status: AlbumStatus) => {
     try {
+      // Fetch full album details to get genre
+      const albumDetails = await deezerApi.getAlbum(album.id);
+      const genre = albumDetails.genres?.data?.[0]?.name;
+
       const albumData = deezerApi.deezerToAlbum(album);
       await addAlbum({
         ...albumData,
+        genre,
         status,
         rating: 0,
       } as any);
@@ -181,6 +261,20 @@ export const SearchScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
+  const renderLastfmArtistItem = ({ item }: { item: LastFmArtist }) => (
+    <TouchableOpacity
+      style={styles.artistCard}
+      onPress={() => handleLastfmArtistSelect(item)}
+    >
+      <Image
+        source={{ uri: lastfmApi.getArtistImageUrl(item) }}
+        style={styles.artistImage}
+        contentFit="cover"
+      />
+      <Text style={styles.artistName} numberOfLines={2}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -220,6 +314,7 @@ export const SearchScreen: React.FC = () => {
               setHasSearched(false);
               setResults([]);
               setArtistResults([]);
+              setLastfmArtists([]);
               setViewMode('albums');
             }}
           >
@@ -229,14 +324,14 @@ export const SearchScreen: React.FC = () => {
       )}
 
       <TouchableOpacity style={styles.reInitSearch} onPress={()=>{
-        setQuery('');setHasSearched(false)}
+        setQuery('');setHasSearched(false);setLastfmArtists([]);setSelectedGenre(null)}
         }>
         <Text>Réinitialiser</Text>
       </TouchableOpacity>
 
       {isLoading ? (
         <LoadingSpinner message="Recherche en cours..." />
-      ) : hasSearched && results.length === 0 && artistResults.length === 0 ? (
+      ) : hasSearched && results.length === 0 && artistResults.length === 0 && lastfmArtists.length === 0 ? (
         <EmptyState
           icon="search-outline"
           title="Aucun résultat"
@@ -273,25 +368,40 @@ export const SearchScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Genre Suggestions */}
+          {/* Genre Cards with Images */}
           {genres.length > 0 && (
             <View style={styles.suggestionsContainer}>
               <Text style={styles.suggestionsTitle}>Explorer par genre</Text>
-              <View style={styles.suggestions}>
+              <View style={styles.genreGrid}>
                 {genres.map((genre) => (
                   <TouchableOpacity
-                    key={genre.id}
-                    style={[styles.suggestionChip, styles.genreChip]}
+                    key={genre.name}
+                    style={styles.genreCard}
                     onPress={() => handleGenreSelect(genre)}
                   >
-                    <Ionicons name="musical-notes" size={14} color={colors.accent} />
-                    <Text style={styles.suggestionText}>{genre.name}</Text>
+                    <Image
+                      source={{ uri: genre.imageUrl }}
+                      style={styles.genreCardImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.genreCardOverlay} />
+                    <Text style={styles.genreCardText}>{genre.name}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
           )}
         </ScrollView>
+      ) : viewMode === 'artists' && lastfmArtists.length > 0 ? (
+        <FlatList
+          data={lastfmArtists}
+          keyExtractor={(item) => item.name}
+          renderItem={renderLastfmArtistItem}
+          numColumns={3}
+          columnWrapperStyle={styles.artistRow}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
       ) : viewMode === 'artists' && artistResults.length > 0 ? (
         <FlatList
           data={artistResults}
@@ -401,6 +511,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  genreGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  genreCard: {
+    width: '48%',
+    height: 100,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+  },
+  genreCardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  genreCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  genreCardText: {
+    color: colors.textLight,
+    fontSize: fontSize.lg,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   genreIndicator: {
     flexDirection: 'row',

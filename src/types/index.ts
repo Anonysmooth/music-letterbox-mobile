@@ -138,3 +138,47 @@ export type MainTabParamList = {
   Collection: undefined;
   Profile: undefined;
 };
+
+// Last.fm API types
+export interface LastFmArtist {
+  name: string;
+  mbid?: string;
+  url: string;
+  streamable: string;
+  image: Array<{
+    '#text': string;
+    size: 'small' | 'medium' | 'large' | 'extralarge' | 'mega';
+  }>;
+  '@attr'?: {
+    rank: string;
+  };
+}
+
+export interface LastFmTag {
+  name: string;
+  url: string;
+}
+
+export interface LastFmTopArtistsResponse {
+  topartists: {
+    artist: LastFmArtist[];
+    '@attr': {
+      tag: string;
+      page: string;
+      perPage: string;
+      totalPages: string;
+      total: string;
+    };
+  };
+}
+
+export interface LastFmTopTagsResponse {
+  toptags: {
+    tag: LastFmTag[];
+    '@attr': {
+      offset: number;
+      num_res: number;
+      total: number;
+    };
+  };
+}
