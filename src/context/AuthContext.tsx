@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 import { User, AuthState } from '../types';
 import { authService } from '../services/authService';
 
@@ -29,28 +32,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const data = snap.data();
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email ?? '',
+            username: data?.username ?? '',
+            createdAt: data?.createdAt ?? firebaseUser.metadata.creationTime ?? new Date().toISOString(),
+          });
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    } catch (error) {
-      console.error('Auth check error:', error);
-    } finally {
       setIsLoading(false);
-    }
-  };
+    });
+
+    return unsubscribe;
+  }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { user } = await authService.login(email, password);
-      setUser(user);
+      const loggedUser = await authService.login(email, password);
+      setUser(loggedUser);
       setIsAuthenticated(true);
     } finally {
       setIsLoading(false);
@@ -60,8 +73,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, username: string, password: string) => {
     setIsLoading(true);
     try {
-      const { user } = await authService.register(email, username, password);
-      setUser(user);
+      const newUser = await authService.register(email, username, password);
+      setUser(newUser);
       setIsAuthenticated(true);
     } finally {
       setIsLoading(false);

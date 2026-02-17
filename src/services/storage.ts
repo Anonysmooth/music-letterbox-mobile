@@ -1,45 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
-import { Album, User, AlbumStatus } from '../types';
+import { Album, AlbumStatus } from '../types';
 
 const STORAGE_KEYS = {
-  USER: '@music_letterbox_user',
-  AUTH_TOKEN: 'auth_token',
   ALBUMS: '@music_letterbox_albums',
   SETTINGS: '@music_letterbox_settings',
 };
 
-// Secure storage for sensitive data (tokens, passwords)
-export const secureStorage = {
-  async setToken(token: string): Promise<void> {
-    await SecureStore.setItemAsync(STORAGE_KEYS.AUTH_TOKEN, token);
-  },
-
-  async getToken(): Promise<string | null> {
-    return SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-  },
-
-  async removeToken(): Promise<void> {
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-  },
-};
-
-// Regular storage for non-sensitive data
 export const storage = {
-  // User management
-  async saveUser(user: User): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-  },
-
-  async getUser(): Promise<User | null> {
-    const data = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-    return data ? JSON.parse(data) : null;
-  },
-
-  async removeUser(): Promise<void> {
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER);
-  },
-
   // Albums management
   async getAlbums(): Promise<Album[]> {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.ALBUMS);
@@ -125,10 +92,8 @@ export const storage = {
   // Clear all data
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove([
-      STORAGE_KEYS.USER,
       STORAGE_KEYS.ALBUMS,
       STORAGE_KEYS.SETTINGS,
     ]);
-    await secureStorage.removeToken();
   },
 };
