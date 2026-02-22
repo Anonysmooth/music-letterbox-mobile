@@ -4,13 +4,16 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: "AIzaSyANs5mAy753DSf4fL4pjTE2n9Qh5SGiYMM",
+  authDomain: "favmusicalbums.firebaseapp.com",
+  projectId: "favmusicalbums",
+  storageBucket: "favmusicalbums.firebasestorage.app",
+  messagingSenderId: "286182075135",
+  appId: "1:286182075135:web:48b9f7651193d14e297aca",
+  measurementId: "G-29MFE3DR17"
 };
 
 const app = initializeApp(firebaseConfig);

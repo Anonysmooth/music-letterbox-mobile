@@ -4,7 +4,7 @@ Une application mobile style Letterboxd pour la musique, connectée à l'API Dee
 
 ## Fonctionnalités
 
-- **Authentification** : Inscription et connexion locale sécurisée
+- **Authentification** : Inscription et connexion via Firebase Auth (email/mot de passe)
 - **Recherche d'albums** : Recherchez des albums via l'API Deezer
 - **Collection personnelle** : Ajoutez des albums à votre collection avec trois statuts :
   - Favoris
@@ -140,10 +140,11 @@ music-letterbox-mobile/
 
 - **React Native** avec **Expo**
 - **TypeScript**
+- **Firebase Auth** (authentification email/mot de passe)
+- **Firebase Firestore** (stockage du profil utilisateur)
 - **React Navigation** (navigation par onglets et stack)
 - **Expo Image** (chargement optimisé des images)
-- **Expo SecureStore** (stockage sécurisé des tokens)
-- **AsyncStorage** (stockage local des données)
+- **AsyncStorage** (stockage local des albums)
 - **API Deezer** (recherche d'albums et métadonnées)
 
 ## Configuration des Assets
