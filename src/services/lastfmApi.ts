@@ -15,7 +15,6 @@ export const lastfmApi = {
     }
 
     const data: LastFmTopArtistsResponse = await response.json();
-    console.log(data.topartists?.artist)
     return data.topartists?.artist || [];
   },
 
@@ -58,7 +57,6 @@ export const lastfmApi = {
 
     // Try to find the preferred size or larger
     for (let i = startIndex; i < sizes.length; i++) {
-      console.log(artist)
       const image = artist.image.find(img => img.size === sizes[i]);
       if (image && image['#text']) {
         return image['#text'];

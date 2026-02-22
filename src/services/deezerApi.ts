@@ -63,8 +63,6 @@ export const deezerApi = {
     // const url = `${DEEZER_API_BASE}/genre/${genreId}/albums?limit=${limit}`;
     // https://api.deezer.com/editorial/152/selection
     const url = `${DEEZER_API_BASE}/editorial/${genreId}/selection`;
-    // https://api.deezer.com/genre/0/artists
-    console.log('url',url)
     return fetchWithProxy(url);
   },
 

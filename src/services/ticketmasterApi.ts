@@ -39,7 +39,6 @@ export const ticketmasterApi = {
     if (attractionId) {
       // attractionId gives us all events where the artist appears (including festivals)
       url = `${TICKETMASTER_API_BASE}/events.json?attractionId=${attractionId}&size=10&sort=date,asc&apikey=${TICKETMASTER_API_KEY}`;
-      console.log('url',url)
     } else {
       // Fallback to keyword search
       url = `${TICKETMASTER_API_BASE}/events.json?keyword=${encodeURIComponent(artistName)}&classificationName=music&size=10&sort=date,asc&apikey=${TICKETMASTER_API_KEY}`;

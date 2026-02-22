@@ -151,6 +151,7 @@ export const SearchScreen: React.FC = () => {
         `"${album.title}" a été ajouté à votre collection.`
       );
     } catch (error) {
+      console.error(error);
       Alert.alert('Erreur', 'Impossible d\'ajouter l\'album.');
     }
   }, [addAlbum]);

@@ -45,7 +45,6 @@ export const CollectionScreen: React.FC = () => {
 
   // Extract unique genres from albums
   const availableGenres = useMemo(() => {
-    // console.log(albums);
     const genres = albums
       .map(a => a.genre)
       .filter((genre): genre is string => !!genre);
