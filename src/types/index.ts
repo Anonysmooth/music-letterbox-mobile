@@ -51,9 +51,27 @@ export interface DeezerAlbum {
   };
 }
 
+export interface DeezerArtist {
+  id: number;
+  name: string;
+  picture: string;
+  picture_small: string;
+  picture_medium: string;
+  picture_big: string;
+  picture_xl?: string;
+  nb_album?: number;
+  nb_fan?: number;
+}
+
 export interface DeezerSearchResponse {
   data: DeezerAlbum[];
   total: number;
+  next?: string;
+}
+
+export interface DeezerArtistResponse {
+  data: DeezerArtist[];
+  total?: number;
   next?: string;
 }
 
@@ -111,6 +129,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   AlbumDetail: { albumId: string | number; fromDeezer?: boolean };
+  ArtistDetail: { artistName: string; artistId?: number; artistImage?: string };
   Search: undefined;
 };
 
@@ -120,3 +139,106 @@ export type MainTabParamList = {
   Collection: undefined;
   Profile: undefined;
 };
+
+// Last.fm API types
+export interface LastFmArtist {
+  name: string;
+  mbid?: string;
+  url: string;
+  streamable: string;
+  image: Array<{
+    '#text': string;
+    size: 'small' | 'medium' | 'large' | 'extralarge' | 'mega';
+  }>;
+  '@attr'?: {
+    rank: string;
+  };
+}
+
+export interface LastFmTag {
+  name: string;
+  url: string;
+}
+
+export interface LastFmTopArtistsResponse {
+  topartists: {
+    artist: LastFmArtist[];
+    '@attr': {
+      tag: string;
+      page: string;
+      perPage: string;
+      totalPages: string;
+      total: string;
+    };
+  };
+}
+
+export interface LastFmTopTagsResponse {
+  toptags: {
+    tag: LastFmTag[];
+    '@attr': {
+      offset: number;
+      num_res: number;
+      total: number;
+    };
+  };
+}
+
+export interface LastFmArtistInfo {
+  name: string;
+  mbid?: string;
+  url: string;
+  image: Array<{
+    '#text': string;
+    size: 'small' | 'medium' | 'large' | 'extralarge' | 'mega';
+  }>;
+  stats: {
+    listeners: string;
+    playcount: string;
+  };
+  tags: {
+    tag: Array<{
+      name: string;
+      url: string;
+    }>;
+  };
+  bio: {
+    summary: string;
+    content: string;
+  };
+}
+
+export interface LastFmArtistInfoResponse {
+  artist: LastFmArtistInfo;
+}
+
+export interface TicketmasterEvent {
+  id: string;
+  name: string;
+  url: string;
+  dates: {
+    start: {
+      localDate: string;
+      localTime?: string;
+    };
+    status?: {
+      code: string;
+    };
+  };
+  _embedded?: {
+    venues?: Array<{
+      name: string;
+      city?: { name: string };
+      country?: { name: string; countryCode: string };
+    }>;
+  };
+}
+
+export interface TicketmasterSearchResponse {
+  _embedded?: {
+    events?: TicketmasterEvent[];
+  };
+  page?: {
+    totalElements: number;
+  };
+}

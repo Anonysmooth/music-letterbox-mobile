@@ -1,4 +1,4 @@
-import { DeezerAlbum, DeezerSearchResponse, DeezerAlbumDetail } from '../types';
+import { DeezerAlbum, DeezerSearchResponse, DeezerAlbumDetail, DeezerArtistResponse, DeezerArtist } from '../types';
 
 const DEEZER_API_BASE = 'https://api.deezer.com';
 
@@ -33,6 +33,12 @@ export const deezerApi = {
     return fetchWithProxy(url);
   },
 
+  async searchArtist(name: string): Promise<DeezerArtist | null> {
+    const url = `${DEEZER_API_BASE}/search/artist?q=${encodeURIComponent(name)}&limit=1`;
+    const response = await fetchWithProxy(url);
+    return response.data?.[0] || null;
+  },
+
   async getTopAlbums(limit: number = 25): Promise<DeezerSearchResponse> {
     const url = `${DEEZER_API_BASE}/chart/0/albums?limit=${limit}`;
     return fetchWithProxy(url);
@@ -43,8 +49,27 @@ export const deezerApi = {
     return fetchWithProxy(url);
   },
 
+  async getEditorialCategories(): Promise<{ data: Array<{ id: number; name: string; picture: string }> }> {
+    const url = `${DEEZER_API_BASE}/editorial`;
+    return fetchWithProxy(url);
+  },
+
+  async getEditorialReleases(editorialId: number, limit: number = 50): Promise<DeezerSearchResponse> {
+    const url = `${DEEZER_API_BASE}/editorial/${editorialId}/releases?limit=${limit}`;
+    return fetchWithProxy(url);
+  },
+
   async getGenreAlbums(genreId: number, limit: number = 25): Promise<DeezerSearchResponse> {
-    const url = `${DEEZER_API_BASE}/genre/${genreId}/albums?limit=${limit}`;
+    // const url = `${DEEZER_API_BASE}/genre/${genreId}/albums?limit=${limit}`;
+    // https://api.deezer.com/editorial/152/selection
+    const url = `${DEEZER_API_BASE}/editorial/${genreId}/selection`;
+    // https://api.deezer.com/genre/0/artists
+    console.log('url',url)
+    return fetchWithProxy(url);
+  },
+
+  async getGenreArtists(genreId: number): Promise<DeezerArtistResponse> {
+    const url = `${DEEZER_API_BASE}/genre/${genreId}/artists`;
     return fetchWithProxy(url);
   },
 

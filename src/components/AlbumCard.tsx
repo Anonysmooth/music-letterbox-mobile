@@ -37,7 +37,9 @@ export const AlbumCard: React.FC<AlbumCardProps> = ({
   savedAlbum,
 }) => {
   const title = isDeezerAlbum(album) ? album.title : album.title;
-  const artist = isDeezerAlbum(album) ? album.artist.name : album.artist;
+  const artist = isDeezerAlbum(album)
+    ? (album.artist?.name || 'Artiste inconnu')
+    : album.artist;
   const coverUrl = isDeezerAlbum(album)
     ? album.cover_medium || album.cover
     : album.coverUrlMedium || album.coverUrl;

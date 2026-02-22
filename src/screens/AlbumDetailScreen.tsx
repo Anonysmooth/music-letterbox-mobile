@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Linking,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, fontSize, borderRadius } from '../constants/theme';
@@ -39,6 +41,11 @@ export const AlbumDetailScreen: React.FC = () => {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [trackModal, setTrackModal] = useState<{ visible: boolean; title: string; artist: string }>({
+    visible: false,
+    title: '',
+    artist: '',
+  });
 
   useEffect(() => {
     loadAlbum();
@@ -168,6 +175,109 @@ export const AlbumDetailScreen: React.FC = () => {
   const trackCount = deezerAlbum?.nb_tracks || localAlbum?.trackCount;
   const genre = deezerAlbum?.genres?.data?.[0]?.name || localAlbum?.genre;
   const tracks = deezerAlbum?.tracks?.data || [];
+  const deezerId = deezerAlbum?.id || localAlbum?.deezerId;
+
+  const searchQuery = encodeURIComponent(`${artist} ${title}`);
+
+  const streamingPlatforms = [
+    {
+      name: 'Deezer',
+      icon: 'deezer' as const,
+      color: '#A238FF',
+      albumUrl: deezerId ? `https://www.deezer.com/album/${deezerId}` : null,
+    },
+    {
+      name: 'Spotify',
+      icon: 'spotify' as const,
+      color: '#1DB954',
+      albumUrl: `https://open.spotify.com/search/${searchQuery}`,
+    },
+    {
+      name: 'Apple Music',
+      icon: 'apple' as const,
+      color: '#FC3C44',
+      albumUrl: `https://music.apple.com/search?term=${searchQuery}`,
+    },
+    {
+      name: 'YouTube Music',
+      icon: 'youtube' as const,
+      color: '#FF0000',
+      albumUrl: `https://music.youtube.com/search?q=${searchQuery}`,
+    },
+  ];
+
+  const purchasePlatforms = [
+    {
+      name: 'Amazon',
+      icon: 'amazon' as const,
+      color: '#FF9900',
+      url: `https://www.amazon.fr/s?k=${searchQuery}+CD+vinyle&i=music`,
+    },
+    {
+      name: 'Fnac',
+      icon: 'store' as const,
+      color: '#E1A400',
+      url: `https://www.fnac.com/SearchResult/ResultList.aspx?Search=${searchQuery}&sft=1&sa=0`,
+    },
+    {
+      name: 'Discogs',
+      icon: 'compact-disc' as const,
+      color: '#FF5722',
+      url: `https://www.discogs.com/search/?q=${searchQuery}&type=release`,
+    },
+  ];
+
+  const openLink = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Erreur', 'Impossible d\'ouvrir le lien.');
+    });
+  };
+
+  const openOnPlatform = async (deepLink: string, webUrl: string) => {
+    try {
+      await Linking.openURL(deepLink);
+    } catch {
+      openLink(webUrl);
+    }
+  };
+
+  const openTrackOnPlatform = (trackTitle: string, trackArtist: string) => {
+    setTrackModal({ visible: true, title: trackTitle, artist: trackArtist });
+  };
+
+  const getTrackPlatforms = () => {
+    const query = encodeURIComponent(`${trackModal.artist} ${trackModal.title}`);
+    return [
+      {
+        name: 'Deezer',
+        icon: 'deezer' as const,
+        color: '#A238FF',
+        deepLink: `deezer://www.deezer.com/search/${query}`,
+        webUrl: `https://www.deezer.com/search/${query}`,
+      },
+      {
+        name: 'Spotify',
+        icon: 'spotify' as const,
+        color: '#1DB954',
+        deepLink: `spotify:search:${trackModal.artist} ${trackModal.title}`,
+        webUrl: `https://open.spotify.com/search/${query}`,
+      },
+      {
+        name: 'Apple Music',
+        icon: 'apple' as const,
+        color: '#FC3C44',
+        deepLink: `music://music.apple.com/search?term=${query}`,
+        webUrl: `https://music.apple.com/search?term=${query}`,
+      },
+      {
+        name: 'YouTube Music',
+        icon: 'youtube' as const,
+        color: '#FF0000',
+        deepLink: `vnd.youtube.music://music.youtube.com/search?q=${query}`,
+        webUrl: `https://music.youtube.com/search?q=${query}`,
+      },
+    ];
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -184,7 +294,15 @@ export const AlbumDetailScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.title}>{title}</Text>
-            <Text style={styles.artist}>{artist}</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ArtistDetail', {
+                artistName: artist,
+                artistId: deezerAlbum?.artist?.id || localAlbum?.artistId,
+                artistImage: deezerAlbum?.artist?.picture_big || deezerAlbum?.artist?.picture_medium,
+              })}
+            >
+              <Text style={[styles.artist, styles.artistLink]}>{artist}</Text>
+            </TouchableOpacity>
             <View style={styles.metadata}>
               {releaseDate && (
                 <Text style={styles.metaText}>{new Date(releaseDate).getFullYear()}</Text>
@@ -251,6 +369,41 @@ export const AlbumDetailScreen: React.FC = () => {
           )}
         </View>
 
+        
+        {/* Streaming Platforms */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Écouter sur</Text>
+          <View style={styles.streamingContainer}>
+            {streamingPlatforms.map((platform) =>
+              platform.albumUrl ? (
+                <TouchableOpacity
+                  key={platform.name}
+                  style={[styles.streamingButton, { borderColor: platform.color }]}
+                  onPress={() => openLink(platform.albumUrl!)}
+                >
+                  <FontAwesome5 name={platform.icon} size={20} color={platform.color} />
+                </TouchableOpacity>
+              ) : null
+            )}
+          </View>
+        </View>
+
+        {/* Purchase Platforms */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Acheter sur</Text>
+          <View style={styles.streamingContainer}>
+            {purchasePlatforms.map((platform) => (
+              <TouchableOpacity
+                key={platform.name}
+                style={[styles.streamingButton, { borderColor: platform.color }]}
+                onPress={() => openLink(platform.url)}
+              >
+                <FontAwesome5 name={platform.icon} size={20} color={platform.color} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Tracklist */}
         {tracks.length > 0 && (
           <View style={styles.section}>
@@ -259,7 +412,10 @@ export const AlbumDetailScreen: React.FC = () => {
               {tracks.map((track, index) => (
                 <View key={track.id} style={styles.trackItem}>
                   <Text style={styles.trackNumber}>{index + 1}</Text>
-                  <View style={styles.trackInfo}>
+                  <TouchableOpacity
+                    style={styles.trackInfo}
+                    onPress={() => openTrackOnPlatform(track.title, track.artist.name)}
+                  >
                     <Text style={styles.trackTitle} numberOfLines={1}>
                       {track.title}
                     </Text>
@@ -268,7 +424,7 @@ export const AlbumDetailScreen: React.FC = () => {
                         {track.artist.name}
                       </Text>
                     )}
-                  </View>
+                  </TouchableOpacity>
                   <Text style={styles.trackDuration}>
                     {formatDuration(track.duration)}
                   </Text>
@@ -278,6 +434,52 @@ export const AlbumDetailScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Track Streaming Modal */}
+      <Modal
+        visible={trackModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTrackModal(prev => ({ ...prev, visible: false }))}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setTrackModal(prev => ({ ...prev, visible: false }))}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle} numberOfLines={2}>
+              {trackModal.title}
+            </Text>
+            <Text style={styles.modalSubtitle} numberOfLines={1}>
+              {trackModal.artist}
+            </Text>
+            <View style={styles.modalPlatforms}>
+              {getTrackPlatforms().map((p) => (
+                <TouchableOpacity
+                  key={p.name}
+                  style={styles.modalPlatformButton}
+                  onPress={() => {
+                    setTrackModal(prev => ({ ...prev, visible: false }));
+                    openOnPlatform(p.deepLink, p.webUrl);
+                  }}
+                >
+                  <View style={[styles.modalPlatformIcon, { borderColor: p.color }]}>
+                    <FontAwesome5 name={p.icon} size={22} color={p.color} />
+                  </View>
+                  <Text style={styles.modalPlatformName}>{p.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setTrackModal(prev => ({ ...prev, visible: false }))}
+            >
+              <Text style={styles.modalCancelText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -337,6 +539,9 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  artistLink: {
+    textDecorationLine: 'underline',
   },
   metadata: {
     flexDirection: 'row',
@@ -421,5 +626,72 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     textAlign: 'center',
     marginTop: spacing.xl,
+  },
+  streamingContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  streamingButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    width: width - spacing.lg * 2,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    color: colors.textLight,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  modalPlatforms: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  modalPlatformButton: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  modalPlatformIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalPlatformName: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+  },
+  modalCancel: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  modalCancelText: {
+    color: colors.textMuted,
+    fontSize: fontSize.md,
   },
 });

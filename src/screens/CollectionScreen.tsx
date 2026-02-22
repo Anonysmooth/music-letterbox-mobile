@@ -5,6 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type FilterType = 'all' | AlbumStatus;
 type SortType = 'recent' | 'title' | 'artist' | 'rating';
+type GenreFilter = 'all' | string;
 
 interface FilterOption {
   key: FilterType;
@@ -38,14 +40,29 @@ export const CollectionScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { albums, isLoading } = useAlbums();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [genreFilter, setGenreFilter] = useState<GenreFilter>('all');
   const [sortBy, setSortBy] = useState<SortType>('recent');
+
+  // Extract unique genres from albums
+  const availableGenres = useMemo(() => {
+    // console.log(albums);
+    const genres = albums
+      .map(a => a.genre)
+      .filter((genre): genre is string => !!genre);
+    return [...new Set(genres)].sort();
+  }, [albums]);
 
   const filteredAlbums = useMemo(() => {
     let filtered = [...albums];
 
-    // Apply filter
+    // Apply status filter
     if (activeFilter !== 'all') {
       filtered = filtered.filter(a => a.status === activeFilter);
+    }
+
+    // Apply genre filter
+    if (genreFilter !== 'all') {
+      filtered = filtered.filter(a => a.genre === genreFilter);
     }
 
     // Apply sort
@@ -65,7 +82,7 @@ export const CollectionScreen: React.FC = () => {
     }
 
     return filtered;
-  }, [albums, activeFilter, sortBy]);
+  }, [albums, activeFilter, genreFilter, sortBy]);
 
   const renderFilterButton = (option: FilterOption) => {
     const isActive = activeFilter === option.key;
@@ -123,10 +140,52 @@ export const CollectionScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-
+      
       <View style={styles.filtersContainer}>
         {filterOptions.map(renderFilterButton)}
       </View>
+
+      {/* Genre Filter */}
+      {availableGenres.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.genreScrollView}
+          contentContainerStyle={styles.genreContainer}
+        >
+          <TouchableOpacity
+            style={[
+              styles.genreChip,
+              genreFilter === 'all' && styles.genreChipActive,
+            ]}
+            onPress={() => setGenreFilter('all')}
+          >
+            <Text style={[
+              styles.genreText,
+              genreFilter === 'all' && styles.genreTextActive,
+            ]}>
+              Tous les genres
+            </Text>
+          </TouchableOpacity>
+          {availableGenres.map((genre) => (
+            <TouchableOpacity
+              key={genre}
+              style={[
+                styles.genreChip,
+                genreFilter === genre && styles.genreChipActive,
+              ]}
+              onPress={() => setGenreFilter(genre)}
+            >
+              <Text style={[
+                styles.genreText,
+                genreFilter === genre && styles.genreTextActive,
+              ]}>
+                {genre}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {filteredAlbums.length === 0 ? (
         <EmptyState
@@ -214,9 +273,39 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl
   },
   row: {
     justifyContent: 'space-between',
+    paddingTop:5
+  },
+  genreScrollView: {
+    height: 30,
+    maxHeight:30,
+    marginBottom: spacing.sm,
+  },
+  genreContainer: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+  },
+  genreChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  genreChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  genreText: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+  },
+  genreTextActive: {
+    color: colors.white,
+    fontWeight: '600',
   },
 });
