@@ -8,7 +8,7 @@ import {
   reauthenticateWithCredential,
   deleteUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { User } from '../types';
 
@@ -109,6 +109,13 @@ export const authService = {
   async deleteAccount(): Promise<void> {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) throw new Error('Non authentifié');
+
+    const albumsSnap = await getDocs(collection(db, 'users', firebaseUser.uid, 'albums'));
+    if (!albumsSnap.empty) {
+      const batch = writeBatch(db);
+      albumsSnap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
 
     await deleteDoc(getUserDoc(firebaseUser.uid));
     await deleteUser(firebaseUser);

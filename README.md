@@ -149,10 +149,9 @@ music-letterbox-mobile/
 - **React Native** avec **Expo**
 - **TypeScript**
 - **Firebase Auth** (authentification email/mot de passe)
-- **Firebase Firestore** (stockage du profil utilisateur)
+- **Firebase Firestore** (profil utilisateur + albums liés au compte via `users/{uid}/albums/`)
 - **React Navigation** (navigation par onglets et stack)
 - **Expo Image** (chargement optimisé des images)
-- **AsyncStorage** (stockage local des albums)
 - **API Deezer** (recherche d'albums et métadonnées)
 - **API Last.fm** (découverte d'artistes par genre, biographies)
 - **API Ticketmaster** (concerts et festivals)
@@ -191,6 +190,18 @@ L'app utilise l'API Ticketmaster Discovery pour afficher les prochains concerts 
 2. Renseignez votre Consumer Key dans `src/config/apiKeys.ts`
 
 ## Changelog
+
+### v1.6.0 - Albums liés au compte utilisateur (Firestore)
+- Migration du stockage des albums de AsyncStorage vers Firestore (`users/{uid}/albums/`)
+- Chaque utilisateur dispose de sa propre collection d'albums isolée
+- Suppression automatique des albums lors de la suppression de compte
+- Règles de sécurité Firestore mises à jour pour protéger les sous-collections
+- Résistance aux valeurs `undefined` lors de l'écriture Firestore
+
+### v1.5.0 - Authentification Firebase
+- Intégration Firebase Auth (email/mot de passe)
+- Profil utilisateur (`username`, `createdAt`) stocké dans Firestore (`users/{uid}`)
+- Remplacement de l'authentification locale (AsyncStorage + hash custom)
 
 ### v1.4.0 - Page Artiste & Concerts
 - Nouvel écran **ArtistDetailScreen** avec biographie (Last.fm en français), tags, statistiques d'écoute et discographie complète

@@ -32,10 +32,10 @@ export const AlbumsProvider: React.FC<AlbumsProviderProps> = ({ children }) => {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   const fetchAlbums = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!user) {
       setAlbums([]);
       setIsLoading(false);
       return;
@@ -52,7 +52,7 @@ export const AlbumsProvider: React.FC<AlbumsProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchAlbums();
