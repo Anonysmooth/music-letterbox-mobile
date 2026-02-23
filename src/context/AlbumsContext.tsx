@@ -61,7 +61,10 @@ export const AlbumsProvider: React.FC<AlbumsProviderProps> = ({ children }) => {
   const addAlbum = async (albumData: Omit<Album, 'id' | 'createdAt' | 'updatedAt'>): Promise<Album> => {
     setError(null);
     try {
-      const newAlbum = await storage.addAlbum(albumData);
+      const newAlbum = await storage.addAlbum(albumData, {
+        username: user?.username ?? '',
+        isPublic: user?.isPublic ?? true,
+      });
       setAlbums(prev => {
         const existingIndex = prev.findIndex(a => a.deezerId === newAlbum.deezerId);
         if (existingIndex >= 0) {

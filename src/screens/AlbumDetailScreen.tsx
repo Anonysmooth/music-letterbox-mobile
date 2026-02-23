@@ -17,10 +17,12 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, fontSize, borderRadius } from '../constants/theme';
-import { RootStackParamList, Album, DeezerAlbumDetail, AlbumStatus } from '../types';
+import { RootStackParamList, Album, DeezerAlbumDetail, AlbumStatus, LikedByInfo } from '../types';
 import { StarRating, StatusSelector, Button, LoadingSpinner, Input } from '../components';
 import { useAlbums } from '../context/AlbumsContext';
+import { useAuth } from '../context/AuthContext';
 import { deezerApi } from '../services/deezerApi';
+import { communityService } from '../services/communityService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRouteProp = RouteProp<RootStackParamList, 'AlbumDetail'>;
@@ -33,6 +35,7 @@ export const AlbumDetailScreen: React.FC = () => {
   const { albumId, fromDeezer } = route.params;
 
   const { albums, addAlbum, updateAlbum, removeAlbum, getAlbumByDeezerId } = useAlbums();
+  const { user } = useAuth();
 
   const [deezerAlbum, setDeezerAlbum] = useState<DeezerAlbumDetail | null>(null);
   const [localAlbum, setLocalAlbum] = useState<Album | null>(null);
@@ -41,6 +44,7 @@ export const AlbumDetailScreen: React.FC = () => {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [likedByInfo, setLikedByInfo] = useState<LikedByInfo | null>(null);
   const [trackModal, setTrackModal] = useState<{ visible: boolean; title: string; artist: string }>({
     visible: false,
     title: '',
@@ -54,9 +58,12 @@ export const AlbumDetailScreen: React.FC = () => {
   const loadAlbum = async () => {
     setIsLoading(true);
     try {
+      let resolvedDeezerId: number | undefined;
+
       if (fromDeezer) {
         // Load from Deezer API
         const deezerId = typeof albumId === 'string' ? parseInt(albumId, 10) : albumId;
+        resolvedDeezerId = deezerId;
         const album = await deezerApi.getAlbum(deezerId);
         setDeezerAlbum(album);
 
@@ -79,10 +86,18 @@ export const AlbumDetailScreen: React.FC = () => {
 
           // Also load Deezer details for tracks
           if (album.deezerId) {
+            resolvedDeezerId = album.deezerId;
             const deezer = await deezerApi.getAlbum(album.deezerId);
             setDeezerAlbum(deezer);
           }
         }
+      }
+
+      // Charger les infos "aimé par" quel que soit le chemin de navigation
+      if (user?.id && resolvedDeezerId) {
+        communityService.getLikedByInfo(resolvedDeezerId, user.id)
+          .then(info => { if (info.totalCount > 0) setLikedByInfo(info); })
+          .catch(err => console.error('getLikedByInfo error:', err));
       }
     } catch (error) {
       console.error('Error loading album:', error);
@@ -338,6 +353,23 @@ export const AlbumDetailScreen: React.FC = () => {
             )}
           </View>
         </View>
+
+        {/* Liked by */}
+        {likedByInfo && likedByInfo.totalCount > 0 && (
+          <View style={styles.section}>
+            <View style={styles.likedByContainer}>
+              <Ionicons name="heart" size={16} color={colors.favorite} />
+              <Text style={styles.likedByText}>
+                {likedByInfo.totalCount === 1
+                  ? `Aimé par ${likedByInfo.usernames[0]}`
+                  : likedByInfo.totalCount === 2
+                  ? `Aimé par ${likedByInfo.usernames[0]} et ${likedByInfo.usernames[1]}`
+                  : `Aimé par ${likedByInfo.usernames[0]}, ${likedByInfo.usernames[1]} et ${likedByInfo.totalCount - 2} autre${likedByInfo.totalCount - 2 > 1 ? 's' : ''}`
+                }
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Review */}
         <View style={styles.section}>
@@ -693,5 +725,20 @@ const styles = StyleSheet.create({
   modalCancelText: {
     color: colors.textMuted,
     fontSize: fontSize.md,
+  },
+  likedByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginHorizontal: spacing.md,
+  },
+  likedByText: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    flex: 1,
   },
 });

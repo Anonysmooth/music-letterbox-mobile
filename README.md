@@ -15,6 +15,9 @@ Une application mobile style Letterboxd pour la musique, connectée à l'API Dee
 - **Statistiques** : Visualisez vos statistiques de collection (artistes préférés, distribution des notes, etc.)
 - **Page artiste** : Biographie (Last.fm), tags, statistiques d'écoute et discographie complète
 - **Concerts & événements** : Prochains concerts et festivals de l'artiste en France (via Ticketmaster)
+- **Feed communautaire** : Découvrez les albums récemment ajoutés par les autres utilisateurs sur l'écran d'accueil
+- **Aimé par** : Sur la page d'un album, voyez qui d'autre l'a mis en favori
+- **Confidentialité** : Toggle dans le profil pour désactiver sa visibilité dans la communauté
 - **Thème sombre** : Interface élégante inspirée de Letterboxd
 
 ## Prérequis
@@ -136,6 +139,7 @@ music-letterbox-mobile/
     │   └── apiKeys.ts     # Clés API (Last.fm, Ticketmaster)
     ├── services/          # Services (API, storage)
     │   ├── authService.ts
+    │   ├── communityService.ts # Requêtes communautaires (feed, "aimé par")
     │   ├── deezerApi.ts
     │   ├── lastfmApi.ts        # API Last.fm (artistes par genre, bio)
     │   ├── ticketmasterApi.ts  # API Ticketmaster (concerts, festivals)
@@ -190,6 +194,15 @@ L'app utilise l'API Ticketmaster Discovery pour afficher les prochains concerts 
 2. Renseignez votre Consumer Key dans `src/config/apiKeys.ts`
 
 ## Changelog
+
+### v1.7.0 - Fonctionnalités communautaires
+- Feed "Communauté" sur l'écran d'accueil : albums récents des autres utilisateurs (tous statuts)
+- Section "Aimé par" sur la page album : liste des utilisateurs qui ont mis l'album en favori
+- Toggle de confidentialité dans le profil pour opt-out du feed communautaire
+- Nouveau service `communityService.ts` (requêtes collection group Firestore)
+- Champs dénormalisés sur les albums (`userId`, `username`, `isPublicFeed`) pour les requêtes communautaires
+- Mise à jour batch de `isPublicFeed` lors du toggle de confidentialité
+- Mise à jour batch de `username` sur tous les albums lors d'un changement de pseudo
 
 ### v1.6.0 - Albums liés au compte utilisateur (Firestore)
 - Migration du stockage des albums de AsyncStorage vers Firestore (`users/{uid}/albums/`)

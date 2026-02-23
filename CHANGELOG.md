@@ -4,6 +4,27 @@
 
 ---
 
+## [1.7.0] - 2026-02-23
+
+### Ajouté
+- Feed "Communauté" sur `HomeScreen` : liste horizontale des albums récents des autres utilisateurs publics (tous statuts, max 10)
+- Section "Aimé par" sur `AlbumDetailScreen` : affiche les usernames des utilisateurs ayant mis l'album en favori (ex : "Aimé par alice, bob et 2 autres")
+- Toggle de confidentialité sur `ProfileScreen` (section "Confidentialité") : permet de se retirer du feed communautaire
+- Nouveau service `communityService.ts` avec deux méthodes utilisant les collection group queries Firestore :
+  - `getRecentCommunityAlbums` : index `isPublicFeed ASC + createdAt DESC`
+  - `getLikedByInfo` : index `deezerId ASC + status ASC + isPublicFeed ASC`
+- Types `CommunityAlbum` et `LikedByInfo` dans `types/index.ts`
+- Champs dénormalisés sur chaque document album : `userId`, `username`, `isPublicFeed`
+- `authService.updatePrivacy` : met à jour `isPublic` sur le doc user + `isPublicFeed` sur tous ses albums (batch)
+- `updatePrivacy` exposé dans `AuthContext`
+
+### Modifié
+- `authService.updateProfile` : met à jour en batch le champ `username` sur tous les albums lors d'un changement de pseudo
+- `AlbumDetailScreen.loadAlbum` : `getLikedByInfo` appelé quel que soit le chemin de navigation (`fromDeezer` true ou false)
+- JSDoc ajoutés sur toutes les méthodes de `authService.ts`
+
+---
+
 ## [1.6.0] - 2026-02-22
 
 ### Ajouté

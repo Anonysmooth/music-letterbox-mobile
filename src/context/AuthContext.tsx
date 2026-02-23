@@ -10,6 +10,7 @@ interface AuthContextType extends AuthState {
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: { username?: string; email?: string }) => Promise<void>;
+  updatePrivacy: (isPublic: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             email: firebaseUser.email ?? '',
             username: data?.username ?? '',
             createdAt: data?.createdAt ?? firebaseUser.metadata.creationTime ?? new Date().toISOString(),
+            isPublic: data?.isPublic !== false, // défaut true si absent
           });
           setIsAuthenticated(true);
         } catch (error) {
@@ -97,6 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(updatedUser);
   };
 
+  const updatePrivacy = async (isPublic: boolean) => {
+    await authService.updatePrivacy(isPublic);
+    setUser(prev => prev ? { ...prev, isPublic } : prev);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -107,6 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         register,
         logout,
         updateProfile,
+        updatePrivacy,
       }}
     >
       {children}

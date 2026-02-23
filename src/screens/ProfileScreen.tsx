@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,8 +16,9 @@ import { useAlbums } from '../context/AlbumsContext';
 import { Button } from '../components';
 
 export const ProfileScreen: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updatePrivacy } = useAuth();
   const { getStats, albums } = useAlbums();
+  const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
 
   const stats = getStats();
 
@@ -29,6 +31,17 @@ export const ProfileScreen: React.FC = () => {
         { text: 'Déconnexion', style: 'destructive', onPress: logout },
       ]
     );
+  };
+
+  const handlePrivacyToggle = async (value: boolean) => {
+    setIsUpdatingPrivacy(true);
+    try {
+      await updatePrivacy(value);
+    } catch {
+      Alert.alert('Erreur', 'Impossible de modifier la confidentialité.');
+    } finally {
+      setIsUpdatingPrivacy(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -165,6 +178,39 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Confidentialité */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Confidentialité</Text>
+          <View style={styles.menu}>
+            <View style={styles.menuItem}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name={user?.isPublic ? 'earth-outline' : 'lock-closed-outline'}
+                  size={22}
+                  color={colors.text}
+                />
+                <View>
+                  <Text style={styles.menuItemLabel}>
+                    {user?.isPublic ? 'Profil public' : 'Profil privé'}
+                  </Text>
+                  <Text style={styles.privacySubtitle}>
+                    {user?.isPublic
+                      ? 'Vos albums apparaissent dans la communauté'
+                      : 'Vos albums sont invisibles pour les autres'}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={user?.isPublic ?? true}
+                onValueChange={handlePrivacyToggle}
+                disabled={isUpdatingPrivacy}
+                trackColor={{ false: colors.border, true: colors.accent }}
+                thumbColor={colors.white}
+              />
+            </View>
+          </View>
+        </View>
+
         {/* Logout */}
         <View style={styles.logoutContainer}>
           <Button
@@ -177,7 +223,7 @@ export const ProfileScreen: React.FC = () => {
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={styles.appInfoText}>Music Letterbox v1.0.0</Text>
+          <Text style={styles.appInfoText}>Music Letterbox v1.6.0</Text>
           <Text style={styles.appInfoText}>Propulsé par Deezer API</Text>
         </View>
       </ScrollView>
@@ -338,13 +384,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    flex: 1,
   },
   menuItemLabel: {
     fontSize: fontSize.md,
+    color: colors.text,
   },
   menuItemValue: {
     color: colors.textMuted,
     fontSize: fontSize.md,
+  },
+  privacySubtitle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+    maxWidth: 220,
   },
   logoutContainer: {
     marginTop: spacing.xl,

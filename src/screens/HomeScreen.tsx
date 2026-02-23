@@ -13,11 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, fontSize, borderRadius } from '../constants/theme';
-import { RootStackParamList, DeezerAlbum } from '../types';
+import { RootStackParamList, DeezerAlbum, CommunityAlbum } from '../types';
 import { AlbumCard, LoadingSpinner, EmptyState } from '../components';
 import { useAlbums } from '../context/AlbumsContext';
 import { useAuth } from '../context/AuthContext';
 import { deezerApi } from '../services/deezerApi';
+import { communityService } from '../services/communityService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,6 +28,7 @@ export const HomeScreen: React.FC = () => {
   const { albums, getStats, isLoading, fetchAlbums } = useAlbums();
   const [trendingAlbums, setTrendingAlbums] = useState<DeezerAlbum[]>([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
+  const [communityAlbums, setCommunityAlbums] = useState<CommunityAlbum[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const stats = getStats();
@@ -42,15 +44,29 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  const loadCommunityFeed = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const items = await communityService.getRecentCommunityAlbums(user.id);
+      setCommunityAlbums(items);
+    } catch (error) {
+      console.error('Community feed error:', error);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     loadTrendingAlbums();
   }, []);
 
+  useEffect(() => {
+    loadCommunityFeed();
+  }, [loadCommunityFeed]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchAlbums(), loadTrendingAlbums()]);
+    await Promise.all([fetchAlbums(), loadTrendingAlbums(), loadCommunityFeed()]);
     setRefreshing(false);
-  }, [fetchAlbums]);
+  }, [fetchAlbums, loadCommunityFeed]);
 
   const recentFavorites = albums
     .filter(a => a.status === 'favorite')
@@ -138,6 +154,35 @@ export const HomeScreen: React.FC = () => {
             />
           )}
         </View>
+
+        {/* Community Feed */}
+        {communityAlbums.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Communauté</Text>
+            </View>
+            <FlatList
+              horizontal
+              data={communityAlbums}
+              keyExtractor={(item) => `${item.userId}-${item.id}`}
+              renderItem={({ item }) => (
+                <View style={styles.horizontalCard}>
+                  <AlbumCard
+                    album={item}
+                    onPress={() => navigation.navigate('AlbumDetail', { albumId: item.deezerId, fromDeezer: true })}
+                    showStatus={false}
+                    showRating={false}
+                  />
+                  <Text style={styles.communityUsername} numberOfLines={1}>
+                    par {item.username}
+                  </Text>
+                </View>
+              )}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+            />
+          </View>
+        )}
 
         {/* Recent Favorites */}
         {recentFavorites.length > 0 && (
@@ -286,6 +331,12 @@ const styles = StyleSheet.create({
   horizontalCard: {
     width: 150,
     marginRight: spacing.md,
+  },
+  communityUsername: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   emptyContainer: {
     paddingTop: spacing.xl,

@@ -3,6 +3,7 @@ export interface User {
   email: string;
   username: string;
   createdAt: string;
+  isPublic: boolean;
 }
 
 export interface Album {
@@ -24,9 +25,25 @@ export interface Album {
   listenedDate?: string;
   createdAt: string;
   updatedAt: string;
+  // Champs communautaires (peuplés à l'écriture, optionnels pour compat albums existants)
+  userId?: string;
+  username?: string;
+  isPublicFeed?: boolean;
 }
 
 export type AlbumStatus = 'favorite' | 'wishlist' | 'listened';
+
+/** Album enrichi pour le feed communautaire — userId et username sont garantis. */
+export interface CommunityAlbum extends Album {
+  userId: string;
+  username: string;
+}
+
+/** Résultat de la requête "aimé par" sur AlbumDetailScreen. */
+export interface LikedByInfo {
+  usernames: string[];
+  totalCount: number;
+}
 
 export interface DeezerAlbum {
   id: number;

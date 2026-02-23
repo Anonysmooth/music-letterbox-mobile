@@ -14,6 +14,12 @@ import {
 import { auth, db } from '../config/firebase';
 import { Album, AlbumStatus } from '../types';
 
+/** Métadonnées communautaires injectées à chaque écriture d'album. */
+export interface AlbumMeta {
+  username: string;
+  isPublic: boolean;
+}
+
 /** Retourne la référence à la sous-collection albums de l'utilisateur connecté. */
 const getAlbumsCol = () => {
   const uid = auth.currentUser?.uid;
@@ -43,8 +49,14 @@ export const storage = {
   /**
    * Ajoute un album à la collection de l'utilisateur.
    * Si un album avec le même `deezerId` existe déjà, il est mis à jour plutôt que dupliqué.
+   * `meta` injecte les champs communautaires (userId, username, isPublicFeed).
    */
-  async addAlbum(album: Omit<Album, 'id' | 'createdAt' | 'updatedAt'>): Promise<Album> {
+  async addAlbum(
+    album: Omit<Album, 'id' | 'createdAt' | 'updatedAt'>,
+    meta: AlbumMeta,
+  ): Promise<Album> {
+    const uid = auth.currentUser?.uid;
+    if (!uid) throw new Error('Non authentifié');
     const existing = await this.getAlbumByDeezerId(album.deezerId);
 
     const now = new Date().toISOString();
@@ -53,6 +65,9 @@ export const storage = {
       id: existing ? existing.id : `album_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now,
+      userId: uid,
+      username: meta.username,
+      isPublicFeed: meta.isPublic,
     };
 
     await setDoc(getAlbumDoc(newAlbum.id), stripUndefined(newAlbum));
